@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\RegisterUserRequest;
 use App\Models\User;
-use Error;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class AuthController extends Controller
@@ -23,14 +23,15 @@ class AuthController extends Controller
             return response()->json([
                 "success" => true,
                 "message" => "User registered",
-                "token" => $token->plainTextToken
-            ]);
+                "token" => $token->plainTextToken,
+                "user" => $newUser
+            ], 201);
         } catch (Throwable $e) {
             return response()->json([
                 "success" => false,
                 "message" => "User could not be registered",
                 "error" => $e
-            ]);
+            ], 501);
         }
     }
 
@@ -49,19 +50,41 @@ class AuthController extends Controller
             }
             // generate token
             $token = $user->createToken('API_LOGIN');
-            // todo send a status code to differ from the other cases
             return response()->json([
                 "success" => true,
                 "message" => "User logged in",
-                "token" => $token->plainTextToken
+                "token" => $token->plainTextToken,
+                "user" => $user
             ]);
         } catch (Throwable $e) {
-            // todo send a status code to differ from the other cases
+            Log::error('Login failed', ['exception' => $e]);
             return response()->json([
                 "success" => false,
                 "message" => "User could not be logged in",
-                "error" => $e
+            ], 500);
+        }
+    }
+    public function logout(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user || !$user->currentAccessToken()) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "No active session or user found.",
+                ], 400);
+            }
+            $user->currentAccessToken()->delete();
+            return response()->json([
+                "success" => true,
+                "message" => "User logged out.",
             ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                "success" => false,
+                "message" => "User could not be logged out. ",
+            ], 500);
         }
     }
 }

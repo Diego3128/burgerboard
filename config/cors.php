@@ -23,7 +23,7 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['X-Requested-Width', 'content-type', 'Accept', 'Authorization'],
+    'allowed_headers' => ['X-Requested-With', 'content-type', 'Accept', 'Authorization'],
 
     'exposed_headers' => [],
 
