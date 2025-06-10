@@ -17,7 +17,7 @@ class AuthController extends Controller
         try {
             $data = $request->validated();
             // create and send token back to the client
-            $newUser = User::create($data);
+            $newUser = User::create($data)->fresh(); // Refresh the model to include defaulted or computed fields after creation
             $token = $newUser->createToken('API_REGISTRATION');
 
             return response()->json([

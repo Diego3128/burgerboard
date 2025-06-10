@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\Product;
 use Carbon\Carbon;
+use Error;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class OrderController extends Controller
@@ -15,9 +22,16 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request): JsonResource
     {
-        //
+        // todos:
+        //create policy to check if the user can see the orders (is admin)
+
+        $orders = Order::with(['products', 'user'])
+            ->where('state', false) // or ->where('state', 0)
+            ->get();
+
+        return OrderResource::collection($orders);
     }
 
     /**
@@ -35,14 +49,13 @@ class OrderController extends Controller
             $user = $request->user();
             $order = new Order();
             $order->user_id = $user->id;
-
             // calc total
             $orderTotal = 0;
             $orderProducts = [];
 
             foreach ($request->products as $product) {
                 $productModel = Product::findOrFail($product['id']);
-                //if the product is available
+                //if the product is available added it to the order
                 if ($productModel->available) {
                     $lineTotal = $productModel->price * $product['quantity'];
                     $orderTotal += $lineTotal;
@@ -58,7 +71,7 @@ class OrderController extends Controller
             // save order
             $order->total = $orderTotal;
             $order->save();
-            // add order_id to each order_product record previously created
+            // add order_id to each order_product array previously created
             foreach ($orderProducts as &$op) {
                 $op['order_id'] = $order->id;
             }
@@ -82,6 +95,45 @@ class OrderController extends Controller
         }
     }
 
+    public function completeOrder(Request $request)
+    {
+        try {
+            $this->authorize('viewAny', Order::class);
+
+            $data = $request->validate([
+                'order_id' => ['required', 'integer']
+            ]);
+
+            $order = Order::findOrFail($data['order_id']);
+            $order->state = true;
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'order' => $order
+            ], 200);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'You are not authorized to perform this action.'
+            ], 403);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors() // error array
+            ], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Order with id ' . $data['order_id'] . ' not found'
+            ], 404);
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     /**
      * Display the specified resource.
      */

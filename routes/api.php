@@ -15,7 +15,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // place an order
+    // change order's state
+    Route::put('/orders/state', [OrderController::class, 'completeOrder']);
+
     Route::apiResource('/orders', OrderController::class);
 });
 
