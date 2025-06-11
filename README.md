@@ -140,4 +140,4 @@ This project is open source and available for anyone to use.
 
 ## 🔗 Related
 
-Frontend Repository: [BurgerBoard React App](https://github.com/Diego3128/burgerboard)
+Frontend Repository: [BurgerBoard React App](https://github.com/Diego3128/burgerboard-frontend)
