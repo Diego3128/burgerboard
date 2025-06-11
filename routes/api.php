@@ -19,12 +19,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/orders/state', [OrderController::class, 'completeOrder']);
 
     Route::apiResource('/orders', OrderController::class);
+
+
+    Route::put('/products/toggle', [ProductController::class, 'toggleAvailability']);
+
+    Route::apiResource('/products', ProductController::class);
 });
 
 
 Route::apiResource('/categories', CategoryController::class);
 
-Route::apiResource('/products', ProductController::class);
 
 Route::post('/register', [AuthController::class, 'register']);
 
